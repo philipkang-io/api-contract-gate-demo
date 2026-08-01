@@ -7,6 +7,10 @@ scripts:
       pm.test('Status code is 200', function () {
           pm.response.to.have.status(200);
       });
+      pm.test('Timestamp is ISO-8601', function () {
+          const json = pm.response.json();
+          pm.expect(json.timestamp).to.match(/^\d{4}-\d{2}-\d{2}T/);
+      });
       pm.test('Response has status ok', function () {
           const json = pm.response.json();
           pm.expect(json.status).to.eql('ok');
