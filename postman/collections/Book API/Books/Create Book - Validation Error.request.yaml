@@ -1,0 +1,24 @@
+$kind: http-request
+url: "{{baseUrl}}/api/v1/books"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "title": "",
+      "author": ""
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 400', function () {
+          pm.response.to.have.status(400);
+      });
+      pm.test('Returns validation error', function () {
+          const json = pm.response.json();
+          pm.expect(json.error.name).to.eql('validationError');
+      });
+    language: text/javascript
+order: 7000

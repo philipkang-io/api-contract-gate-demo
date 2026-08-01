@@ -1,0 +1,15 @@
+$kind: http-request
+url: "{{baseUrl}}/api/v1/books/{{bookId}}"
+method: DELETE
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Delete confirmation', function () {
+          const json = pm.response.json();
+          pm.expect(json.message).to.eql('Book deleted');
+      });
+    language: text/javascript
+order: 5000

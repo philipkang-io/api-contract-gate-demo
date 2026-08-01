@@ -1,0 +1,32 @@
+$kind: http-request
+url: "{{baseUrl}}/api/v1/books"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "title": "Dune",
+      "author": "Frank Herbert",
+      "year": 1965
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 201', function () {
+          pm.response.to.have.status(201);
+      });
+      pm.test('Book is created with correct data', function () {
+          const json = pm.response.json();
+          pm.expect(json.book.title).to.eql('Dune');
+          pm.expect(json.book.author).to.eql('Frank Herbert');
+          pm.expect(json.book.year).to.eql(1965);
+          pm.expect(json.book.id).to.be.a('string');
+      });
+      pm.test('Save book ID for later', function () {
+          const json = pm.response.json();
+          pm.collectionVariables.set('bookId', json.book.id);
+      });
+    language: text/javascript
+order: 2000

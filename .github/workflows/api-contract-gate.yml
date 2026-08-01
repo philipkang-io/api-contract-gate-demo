@@ -1,0 +1,94 @@
+name: API Contract Gate
+
+# Runs on every push to main AND every pull request into main.
+# The spec is linted against workspace governance rules before anything executes;
+# the collection is then run against the live service as a contract gate.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  COLLECTION: ./postman/collections/Book API
+  SPEC: ./postman/specs/book-api.yaml
+  ENVIRONMENT: ./postman/environments/local.json
+
+jobs:
+  validate:
+    name: Validate API Spec & Contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Postman CLI
+        run: curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+
+      - name: Login to Postman
+        run: postman login --with-api-key "${{ secrets.POSTMAN_API_KEY }}"
+
+      # Design-time gate: governance rules from the Postman workspace.
+      - name: Lint API spec
+        run: |
+          postman spec lint "$SPEC" \
+            --workspace-id "${{ vars.POSTMAN_WORKSPACE_ID }}" \
+            --fail-severity ERROR
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start API
+        run: |
+          npm start &
+          for i in $(seq 1 20); do
+            if nc -z localhost 3000; then echo "API is up"; break; fi
+            echo "waiting for API..."
+            sleep 2
+          done
+          nc -z localhost 3000 || { echo "::error::API failed to start"; exit 1; }
+
+      # Runtime gate: contract tests against the live service.
+      - name: Run contract tests
+        run: |
+          set -o pipefail
+          postman collection run "$COLLECTION" -e "$ENVIRONMENT" | tee /tmp/run.log
+
+      # A collection run that executes nothing still exits 0. Without this step a
+      # broken or unparseable collection reports a green gate having tested nothing.
+      - name: Gate — verify tests actually executed
+        if: always()
+        run: |
+          if [ ! -f /tmp/run.log ]; then
+            echo "::error::No run log produced — the collection never ran."
+            exit 1
+          fi
+          EXPECTED=$(find "$COLLECTION" -name '*.request.yaml' | wc -l | tr -d ' ')
+          REQUESTS=$(awk -F'|' '/^\|[[:space:]]*requests/  {gsub(/ /,"",$3); print $3}' /tmp/run.log)
+          ASSERTIONS=$(awk -F'|' '/^\|[[:space:]]*assertions/{gsub(/ /,"",$3); print $3}' /tmp/run.log)
+          REQUESTS=${REQUESTS:-0}; ASSERTIONS=${ASSERTIONS:-0}
+          echo "requests on disk: $EXPECTED | executed: $REQUESTS | assertions: $ASSERTIONS"
+
+          if [ "$REQUESTS" -eq 0 ]; then
+            echo "::error::Collection executed 0 requests. Green here would be meaningless."
+            exit 1
+          fi
+          if [ "$REQUESTS" -ne "$EXPECTED" ]; then
+            echo "::error::Executed $REQUESTS of $EXPECTED requests — some were silently skipped."
+            exit 1
+          fi
+          if [ "$ASSERTIONS" -eq 0 ]; then
+            echo "::error::0 assertions ran. The requests fired but nothing was verified."
+            exit 1
+          fi
+          echo "Gate satisfied: $REQUESTS/$EXPECTED requests, $ASSERTIONS assertions."
+
+      - name: Stop API
+        if: always()
+        run: pkill -f "node src/server.js" || true

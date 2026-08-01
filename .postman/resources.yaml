@@ -1,0 +1,12 @@
+workspace:
+  id: dceb00e5-6169-4a7d-9964-73f946662ab8
+
+localResources:
+  specs:
+    - ../postman/specs/book-api.yaml
+
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
+cloudResources:
+  specs: {}
+  collections: {}

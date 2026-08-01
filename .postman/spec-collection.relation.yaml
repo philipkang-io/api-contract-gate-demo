@@ -1,0 +1,9 @@
+# This section maps specification-collection pairs that are linked and used for syncing them with each other.
+# The Paths are relative to the .postman directory (avoid absolute paths).
+# Keep one entry per spec + collection pair.
+# The `syncOptions` object stores specification-collection syncing options.
+relations:
+  - spec: ../postman/specs/book-api.yaml
+    collection: ../postman/collections/Book API
+    syncOptions:
+      syncExamples: false

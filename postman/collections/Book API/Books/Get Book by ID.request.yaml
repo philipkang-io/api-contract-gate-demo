@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{baseUrl}}/api/v1/books/{{bookId}}"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Returns the correct book', function () {
+          const json = pm.response.json();
+          const bookId = pm.collectionVariables.get('bookId');
+          pm.expect(json.book.id).to.eql(bookId);
+          pm.expect(json.book.title).to.eql('Dune');
+      });
+    language: text/javascript
+order: 3000
