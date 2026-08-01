@@ -1,13 +1,15 @@
 name: API Contract Gate
 
-# Runs on every push to main AND every pull request into main.
+# Runs on EVERY push to ANY branch. The resulting check is attached to the commit,
+# so a pull request whose head is that commit inherits it — which is what satisfies
+# the required status check on main. No separate `pull_request` trigger, so each
+# push produces exactly one run instead of two.
+#
 # The spec is linted against workspace governance rules before anything executes;
 # the collection is then run against the live service as a contract gate.
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: ['**']
   workflow_dispatch:
 
 env:
