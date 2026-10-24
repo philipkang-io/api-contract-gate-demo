@@ -3,7 +3,8 @@
  * Centralized error handling for the application
  */
 
-const errorHandler = (err, req, res, _next) => {
+const errorHandler = (err, req, res, next) => {
+  void next;
   console.error('Error:', err);
 
   // Default error response
