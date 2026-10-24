@@ -1,4 +1,15 @@
 $kind: http-request
+description: |-
+  Checks whether the Book API is available and operating normally.
+
+  A successful response returns HTTP 200 with a JSON object containing:
+
+  - `status`: `ok`
+      
+  - `timestamp`: the current server time in ISO 8601 format
+      
+
+  Use this endpoint for service readiness checks and basic availability monitoring.
 url: "{{baseUrl}}/health"
 method: GET
 scripts:
