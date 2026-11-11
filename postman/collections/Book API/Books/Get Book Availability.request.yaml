@@ -1,0 +1,35 @@
+$kind: http-request
+url: "{{baseUrl}}/api/v1/books/{{bookId}}/availability"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Availability has required fields with correct types', function () {
+          const a = pm.response.json().availability;
+          pm.expect(a).to.be.an('object');
+          pm.expect(a.bookId).to.be.a('string');
+          pm.expect(a.available).to.be.a('boolean');
+          pm.expect(Number.isInteger(a.copiesTotal)).to.be.true;
+          pm.expect(Number.isInteger(a.copiesAvailable)).to.be.true;
+      });
+      pm.test('Returns availability for the requested book', function () {
+          const a = pm.response.json().availability;
+          pm.expect(a.bookId).to.eql(pm.collectionVariables.get('bookId'));
+      });
+      pm.test('Copy counts are consistent', function () {
+          const a = pm.response.json().availability;
+          pm.expect(a.copiesAvailable).to.be.at.least(0);
+          pm.expect(a.copiesAvailable).to.be.at.most(a.copiesTotal);
+          pm.expect(a.available).to.eql(a.copiesAvailable > 0);
+      });
+      pm.test('New book has one available copy', function () {
+          const a = pm.response.json().availability;
+          pm.expect(a.copiesTotal).to.eql(1);
+          pm.expect(a.copiesAvailable).to.eql(1);
+          pm.expect(a.available).to.eql(true);
+      });
+    language: text/javascript
+order: 3500
