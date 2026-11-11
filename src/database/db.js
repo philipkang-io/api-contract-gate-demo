@@ -8,6 +8,7 @@ const Book = require('../models/Book');
 class Database {
   constructor() {
     this.books = new Map();
+    this.copies = new Map(); // bookId -> { total, checkedOut } (kept apart from Book so its JSON shape is unchanged)
     this._seed();
   }
 
@@ -17,6 +18,16 @@ class Database {
       new Book('2', '1984', 'George Orwell', 1949)
     ];
     sample.forEach(b => this.books.set(b.id, b));
+    this.copies.set('1', { total: 3, checkedOut: 1 });
+    this.copies.set('2', { total: 2, checkedOut: 2 });
+  }
+
+  /** Availability for one book, or null if the book doesn't exist */
+  getAvailability(id) {
+    if (!this.books.has(id)) return null;
+    const { total, checkedOut } = this.copies.get(id) || { total: 1, checkedOut: 0 };
+    const copiesAvailable = total - checkedOut;
+    return { bookId: id, available: copiesAvailable > 0, copiesTotal: total, copiesAvailable };
   }
 
   getBooks() {
@@ -31,6 +42,7 @@ class Database {
     const id = uuidv4().slice(0, 8);
     const book = new Book(id, data.title.trim(), data.author.trim(), data.year ?? null);
     this.books.set(id, book);
+    this.copies.set(id, { total: 1, checkedOut: 0 });
     return book;
   }
 
@@ -44,12 +56,14 @@ class Database {
   }
 
   deleteBook(id) {
+    this.copies.delete(id);
     return this.books.delete(id);
   }
 
   /** Reset store and re-seed (for tests) */
   reset() {
     this.books.clear();
+    this.copies.clear();
     this._seed();
   }
 }

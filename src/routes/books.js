@@ -22,6 +22,15 @@ router.get('/:id', (req, res) => {
   res.json({ book: book.toJSON() });
 });
 
+// Get availability for one book
+router.get('/:id/availability', (req, res) => {
+  const availability = db.getAvailability(req.params.id);
+  if (!availability) {
+    return res.status(404).json({ error: { name: 'notFound', message: 'Book not found' } });
+  }
+  res.json({ availability });
+});
+
 // Create book
 router.post('/', (req, res) => {
   const validation = Book.validate(req.body);
