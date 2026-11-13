@@ -179,7 +179,7 @@ paths:
       - $ref: "#/components/parameters/BookId"
 
     get:
-      summary: Get availability for a book
+      
       operationId: getBookAvailability
       tags:
         - Books
