@@ -1,0 +1,18 @@
+$kind: http-request
+url: "{{baseUrl}}/api/v1/books/2/availability"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Book with every copy checked out is unavailable', function () {
+          const a = pm.response.json().availability;
+          pm.expect(a.bookId).to.eql('2');
+          pm.expect(a.available).to.be.false;
+          pm.expect(a.copiesAvailable).to.eql(0);
+          pm.expect(a.copiesTotal).to.be.at.least(1);
+      });
+    language: text/javascript
+order: 3600
